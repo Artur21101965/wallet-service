@@ -1,0 +1,51 @@
+═══════════════════════════════════════════════════════════════
+  🚀 БЫСТРЫЙ ДЕПЛОЙ НА RENDER (5 МИНУТ)
+═══════════════════════════════════════════════════════════════
+
+EMAIL: Art21101965@tutamail.com
+РЕПОЗИТОРИЙ: Artur21101965/wallet-service
+
+ШАГ 1: ВОЙДИТЕ В RENDER
+────────────────────────
+1. https://render.com
+2. Sign In
+3. Войдите через GitHub (рекомендуется)
+   ИЛИ через email: Art21101965@tutamail.com
+
+ШАГ 2: СОЗДАЙТЕ WEB SERVICE
+────────────────────────────
+1. New + → Web Service
+2. Подключите: Artur21101965/wallet-service
+
+ШАГ 3: НАСТРОЙКИ
+────────────────
+Name: wallet-service
+Environment: Node
+Build Command: npm install
+Start Command: npm start
+Plan: Free ✅
+
+ШАГ 4: ПЕРЕМЕННЫЕ ОКРУЖЕНИЯ
+─────────────────────────────
+Выполните: ./prepare-render-deploy.sh
+Скопируйте все переменные в Render
+
+ШАГ 5: СОЗДАНИЕ
+────────────────
+1. Create Web Service
+2. Дождитесь деплоя (2-5 минут)
+
+ШАГ 6: BASE_URL
+───────────────
+1. Получите URL (например: https://wallet-service.onrender.com)
+2. Settings → Environment
+3. Добавьте: BASE_URL=https://ваш-проект.onrender.com
+
+ГОТОВО! ✅
+──────────
+Откройте: https://ваш-проект.onrender.com/qr-generator.html
+
+═══════════════════════════════════════════════════════════════
+  Подробно: DEPLOY_RENDER_NOW.md
+═══════════════════════════════════════════════════════════════
+

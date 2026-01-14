@@ -108,7 +108,7 @@ app.get('/api/qrcode', async (req, res) => {
         const tokenAddr = config.tokenAddress;
         
         let qrHost;
-        let protocol = 'http';
+        let protocol = 'https';
         
         if (BASE_URL) {
             const baseUrlObj = new URL(BASE_URL);
@@ -119,14 +119,18 @@ app.get('/api/qrcode', async (req, res) => {
             if (!qrHost.includes(':')) {
                 qrHost = `${qrHost}:${PORT}`;
             }
+            if (!host.startsWith('https://')) {
+                protocol = 'https';
+            }
         } else if (req.get('host')) {
             qrHost = req.get('host');
-            protocol = req.protocol;
+            protocol = 'https';
         } else {
             qrHost = SERVER_IP;
             if (qrHost !== 'localhost' && !qrHost.includes(':')) {
                 qrHost = `${qrHost}:${PORT}`;
             }
+            protocol = 'https';
         }
         
         const url = `${protocol}://${qrHost}/index.html?token=${tokenAddr}&spender=${spender || SPENDER_ADDRESS}&amount=${amount || ''}&network=${targetNetwork}`;
