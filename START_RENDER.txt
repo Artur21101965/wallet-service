@@ -1,0 +1,60 @@
+═══════════════════════════════════════════════════════════════
+  🚀 НАЧНИТЕ ЗДЕСЬ - ДЕПЛОЙ НА RENDER
+═══════════════════════════════════════════════════════════════
+
+ШАГ 1: GitHub репозиторий (если еще нет)
+─────────────────────────────────────────
+1. https://github.com/new
+2. Создайте репозиторий "wallet-service"
+3. Загрузите код:
+   git remote add origin https://github.com/ваш-username/wallet-service.git
+   git push -u origin main
+
+ШАГ 2: Render.com
+──────────────────
+1. https://render.com
+2. Войдите через GitHub
+3. New + → Web Service
+
+ШАГ 3: Настройки
+─────────────────
+- Подключите GitHub репозиторий
+- Name: wallet-service
+- Environment: Node
+- Build Command: npm install
+- Start Command: npm start
+- Plan: Free ✅
+
+ШАГ 4: Переменные окружения
+─────────────────────────────
+Добавьте ДО создания сервиса:
+
+NETWORK = sepolia
+TOKEN_ADDRESS_SEPOLIA = ваш_адрес
+TOKEN_ADDRESS_MAINNET = ваш_адрес
+SPENDER_ADDRESS = 0xE4576aC79aBbe431EdD7aA55111a843529285edB
+PRIVATE_KEY = ваш_ключ
+SEPOLIA_RPC_URL = ваш_rpc
+MAINNET_RPC_URL = ваш_rpc
+PORT = 10000
+
+ШАГ 5: Создание
+────────────────
+1. Create Web Service
+2. Дождитесь деплоя (2-5 минут)
+
+ШАГ 6: BASE_URL
+───────────────
+1. Получите URL (например: https://wallet-service.onrender.com)
+2. Settings → Environment
+3. Добавьте: BASE_URL = https://ваш-проект.onrender.com
+4. Render перезапустит сервис
+
+ГОТОВО! ✅
+──────────
+Откройте: https://ваш-проект.onrender.com/qr-generator.html
+
+═══════════════════════════════════════════════════════════════
+  Подробно: DEPLOY_RENDER.md
+═══════════════════════════════════════════════════════════════
+

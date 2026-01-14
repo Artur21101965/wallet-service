@@ -1,0 +1,47 @@
+═══════════════════════════════════════════════════════════════
+  🚀 БЫСТРЫЙ ДЕПЛОЙ НА RENDER (5 МИНУТ)
+═══════════════════════════════════════════════════════════════
+
+1. СОЗДАЙТЕ GITHUB РЕПОЗИТОРИЙ:
+   - https://github.com/new
+   - Название: wallet-service
+   - Загрузите код (git push)
+
+2. ОТКРОЙТЕ RENDER:
+   - https://render.com
+   - Войдите через GitHub
+
+3. СОЗДАЙТЕ WEB SERVICE:
+   - New + → Web Service
+   - Подключите GitHub репозиторий
+
+4. НАСТРОЙКИ:
+   - Name: wallet-service
+   - Environment: Node
+   - Build Command: npm install
+   - Start Command: npm start
+   - Plan: Free ✅
+
+5. ДОБАВЬТЕ ПЕРЕМЕННЫЕ ОКРУЖЕНИЯ:
+   NETWORK = sepolia
+   TOKEN_ADDRESS_SEPOLIA = ваш_адрес
+   TOKEN_ADDRESS_MAINNET = ваш_адрес
+   SPENDER_ADDRESS = 0xE4576aC79aBbe431EdD7aA55111a843529285edB
+   PRIVATE_KEY = ваш_ключ
+   SEPOLIA_RPC_URL = ваш_rpc
+   MAINNET_RPC_URL = ваш_rpc
+   PORT = 10000
+
+6. CREATE WEB SERVICE
+
+7. ПОСЛЕ ДЕПЛОЯ:
+   - Получите URL (например: https://wallet-service.onrender.com)
+   - Добавьте переменную: BASE_URL = https://wallet-service.onrender.com
+
+8. ГОТОВО! ✅
+   Откройте: https://ваш-проект.onrender.com/qr-generator.html
+
+═══════════════════════════════════════════════════════════════
+  Подробная инструкция: DEPLOY_RENDER.md
+═══════════════════════════════════════════════════════════════
+

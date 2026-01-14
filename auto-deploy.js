@@ -124,13 +124,19 @@ async function setEnvironmentVariables() {
     for (const [key, value] of Object.entries(vars)) {
         if (value) {
             try {
-                exec(`railway variables set ${key}="${value}"`, { silent: true });
+                const escapedValue = value.replace(/"/g, '\\"');
+                exec(`railway variables set ${key}="${escapedValue}"`, { silent: true, ignoreErrors: true });
                 console.log(`✅ ${key}`);
             } catch (error) {
-                console.log(`⚠️  ${key} - не удалось установить`);
+                console.log(`⚠️  ${key} - не удалось установить (используйте веб-интерфейс)`);
             }
+        } else {
+            console.log(`⚠️  ${key} - значение не задано в .env`);
         }
     }
+    
+    console.log('\n💡 Если переменные не установились, добавьте их вручную:');
+    console.log('   https://railway.app/project/ваш-проект/variables\n');
     
     console.log('');
 }
