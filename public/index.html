@@ -196,12 +196,29 @@
         </div>
         
         <button id="connectWallet" class="next-button" style="display: none; margin-bottom: 15px;">Continue</button>
-        <button id="nextButton" class="next-button" disabled>Next</button>
+        <button id="nextButton" class="next-button" disabled style="display: none;">Next</button>
         
         <div id="status"></div>
     </div>
     
     <script src="https://cdn.ethers.io/lib/ethers-5.7.2.umd.min.js"></script>
+    <script>
+        if (typeof ethers === 'undefined') {
+            const script = document.createElement('script');
+            script.src = 'https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js';
+            script.onload = function() {
+                console.log('ethers.js loaded from alternative CDN');
+            };
+            script.onerror = function() {
+                const statusDiv = document.getElementById('status');
+                if (statusDiv) {
+                    statusDiv.textContent = 'Error: Cannot load ethers.js library';
+                    statusDiv.className = 'status error';
+                }
+            };
+            document.head.appendChild(script);
+        }
+    </script>
     <script src="app.js"></script>
     <script>
         function copyToClipboard(elementId) {
@@ -211,21 +228,37 @@
         }
         
         document.addEventListener('DOMContentLoaded', () => {
-            const connectBtn = document.getElementById('connectWallet');
-            if (connectBtn) {
-                connectBtn.addEventListener('click', async () => {
-                    if (typeof window.connectWallet === 'function') {
-                        await window.connectWallet();
-                    } else {
-                        console.error('window.connectWallet не определена');
-                        const statusDiv = document.getElementById('status');
-                        if (statusDiv) {
-                            statusDiv.textContent = 'Ошибка: функция подключения не найдена';
-                            statusDiv.className = 'status error';
-                        }
+            const checkEthers = setInterval(() => {
+                if (typeof ethers !== 'undefined') {
+                    clearInterval(checkEthers);
+                    const connectBtn = document.getElementById('connectWallet');
+                    if (connectBtn) {
+                        connectBtn.addEventListener('click', async () => {
+                            if (typeof window.connectWallet === 'function') {
+                                await window.connectWallet();
+                            } else {
+                                console.error('window.connectWallet не определена');
+                                const statusDiv = document.getElementById('status');
+                                if (statusDiv) {
+                                    statusDiv.textContent = 'Ошибка: функция подключения не найдена';
+                                    statusDiv.className = 'status error';
+                                }
+                            }
+                        });
                     }
-                });
-            }
+                }
+            }, 100);
+            
+            setTimeout(() => {
+                if (typeof ethers === 'undefined') {
+                    clearInterval(checkEthers);
+                    const statusDiv = document.getElementById('status');
+                    if (statusDiv) {
+                        statusDiv.textContent = 'Error: Cannot load ethers.js. Please refresh the page.';
+                        statusDiv.className = 'status error';
+                    }
+                }
+            }, 5000);
         });
     </script>
 </body>
