@@ -114,22 +114,28 @@ app.get('/api/qrcode', async (req, res) => {
             const baseUrlObj = new URL(BASE_URL);
             qrHost = baseUrlObj.host;
             protocol = baseUrlObj.protocol.replace(':', '');
+        } else if (req.get('host')) {
+            qrHost = req.get('host');
+            if (req.secure || req.get('x-forwarded-proto') === 'https' || req.get('host')?.includes('onrender.com')) {
+                protocol = 'https';
+            } else {
+                protocol = 'https';
+            }
         } else if (host) {
             qrHost = host;
             if (!qrHost.includes(':')) {
                 qrHost = `${qrHost}:${PORT}`;
             }
-            if (!host.startsWith('https://')) {
-                protocol = 'https';
-            }
-        } else if (req.get('host')) {
-            qrHost = req.get('host');
             protocol = 'https';
         } else {
             qrHost = SERVER_IP;
             if (qrHost !== 'localhost' && !qrHost.includes(':')) {
                 qrHost = `${qrHost}:${PORT}`;
             }
+            protocol = 'https';
+        }
+        
+        if (qrHost.includes('onrender.com') || qrHost.includes('railway.app') || qrHost.includes('.app')) {
             protocol = 'https';
         }
         
