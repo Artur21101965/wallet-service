@@ -107,6 +107,13 @@ app.get('/api/qrcode', async (req, res) => {
         const config = getCurrentNetworkConfig(targetNetwork);
         const tokenAddr = config.tokenAddress;
         
+        if (!tokenAddr || tokenAddr === '0x...' || !/^0x[a-fA-F0-9]{40}$/.test(tokenAddr)) {
+            return res.status(400).json({
+                success: false,
+                error: `Token address not configured for ${targetNetwork}. Please set TOKEN_ADDRESS_${targetNetwork.toUpperCase()} in environment variables.`
+            });
+        }
+        
         let qrHost;
         let protocol = 'https';
         
