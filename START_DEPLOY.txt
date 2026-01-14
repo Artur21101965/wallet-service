@@ -1,0 +1,43 @@
+═══════════════════════════════════════════════════════════════
+  🚀 БЫСТРЫЙ ДЕПЛОЙ - ВЫПОЛНИТЕ ЭТИ ШАГИ
+═══════════════════════════════════════════════════════════════
+
+1. СОЗДАЙТЕ GITHUB РЕПОЗИТОРИЙ:
+   - Откройте https://github.com/new
+   - Название: wallet-service
+   - Создайте репозиторий
+   - Загрузите код (или используйте GitHub Desktop)
+
+2. ОТКРОЙТЕ RAILWAY:
+   - https://railway.app
+   - Войдите через GitHub
+   - New Project → Deploy from GitHub repo
+   - Выберите ваш репозиторий
+
+3. ДОБАВЬТЕ ПЕРЕМЕННЫЕ ОКРУЖЕНИЯ:
+   В Railway: Settings → Variables → New Variable
+   
+   Добавьте все из вашего .env файла:
+   - NETWORK
+   - TOKEN_ADDRESS_SEPOLIA
+   - TOKEN_ADDRESS_MAINNET
+   - SPENDER_ADDRESS
+   - PRIVATE_KEY
+   - SEPOLIA_RPC_URL
+   - MAINNET_RPC_URL
+
+4. ПОЛУЧИТЕ URL:
+   - Settings → Networking → Public Domain
+   - Скопируйте URL
+
+5. ОБНОВИТЕ BASE_URL:
+   - Settings → Variables
+   - Добавьте: BASE_URL = https://ваш-проект.railway.app
+
+6. ГОТОВО! ✅
+   Откройте: https://ваш-проект.railway.app/qr-generator.html
+
+═══════════════════════════════════════════════════════════════
+  Подробные инструкции: DEPLOY_NOW.md
+═══════════════════════════════════════════════════════════════
+

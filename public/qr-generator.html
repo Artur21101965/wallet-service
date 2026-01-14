@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Генератор QR кода</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 600px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        
+        .warning {
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+            color: #856404;
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 600;
+        }
+        
+        input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+        
+        input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        button {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s;
+            margin-top: 10px;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+        }
+        
+        .qr-container {
+            text-align: center;
+            margin-top: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+        
+        .qr-container img {
+            max-width: 100%;
+            border: 5px solid white;
+            border-radius: 10px;
+        }
+        
+        .url-display {
+            margin-top: 20px;
+            padding: 15px;
+            background: #e7f3ff;
+            border-radius: 8px;
+            word-break: break-all;
+            font-family: monospace;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="warning">
+            <h2>⚠️ ВНИМАНИЕ</h2>
+            <p>Генерируйте QR коды только для тестирования на собственных кошельках!</p>
+        </div>
+        
+        <h1>Генератор QR кода</h1>
+        
+        <div class="form-group">
+            <label>Сеть:</label>
+            <select id="network" style="width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 8px; font-size: 16px;">
+                <option value="sepolia">Sepolia (Testnet)</option>
+                <option value="mainnet">Ethereum Mainnet</option>
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label>Сумма для разрешения:</label>
+            <input type="number" id="amount" placeholder="100" step="0.000001" min="0" value="100">
+        </div>
+        
+        <div class="form-group">
+            <label>Адрес получателя разрешения:</label>
+            <input type="text" id="spender" placeholder="0xE4576aC79aBbe431EdD7aA55111a843529285edB" value="0xE4576aC79aBbe431EdD7aA55111a843529285edB">
+        </div>
+        
+        <button id="generateQR">Сгенерировать QR код</button>
+        
+        <div class="qr-container" id="qrContainer" style="display: none;">
+            <h3>QR код для сканирования:</h3>
+            <img id="qrImage" src="" alt="QR Code">
+            <div class="url-display" id="urlDisplay"></div>
+        </div>
+    </div>
+    
+    <script>
+        document.getElementById('generateQR').addEventListener('click', async () => {
+            const amount = document.getElementById('amount').value;
+            const spender = document.getElementById('spender').value;
+            const network = document.getElementById('network').value;
+            
+            if (!spender || !spender.startsWith('0x')) {
+                alert('Введите корректный адрес получателя');
+                return;
+            }
+            
+            try {
+                const url = `/api/qrcode?amount=${amount}&spender=${spender}&network=${network}`;
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                if (data.success) {
+                    document.getElementById('qrImage').src = data.qrcode;
+                    document.getElementById('urlDisplay').textContent = data.url;
+                    document.getElementById('qrContainer').style.display = 'block';
+                } else {
+                    alert('Ошибка: ' + data.error);
+                }
+            } catch (error) {
+                alert('Ошибка: ' + error.message);
+            }
+        });
+    </script>
+</body>
+</html>
+

@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign Permit</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #0a0e27;
+            min-height: 100vh;
+            padding: 20px;
+            color: #ffffff;
+        }
+        
+        .header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+        
+        .back-arrow {
+            width: 24px;
+            height: 24px;
+            margin-right: 15px;
+            cursor: pointer;
+            color: #ffffff;
+            font-size: 24px;
+        }
+        
+        h1 {
+            font-size: 20px;
+            font-weight: 600;
+            color: #ffffff;
+        }
+        
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+        }
+        
+        .form-section {
+            margin-bottom: 25px;
+        }
+        
+        .form-label {
+            display: block;
+            font-size: 14px;
+            color: #ffffff;
+            margin-bottom: 10px;
+            font-weight: 500;
+        }
+        
+        .input-wrapper {
+            position: relative;
+        }
+        
+        .input-field {
+            width: 100%;
+            background: #1a1f3a;
+            border: 1px solid #2a2f4a;
+            border-radius: 12px;
+            padding: 15px;
+            font-size: 16px;
+            color: #ffffff;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+        
+        .input-field:focus {
+            border-color: #4CAF50;
+        }
+        
+        .input-field::placeholder {
+            color: #6b7280;
+        }
+        
+        .input-field:read-only {
+            color: #9ca3af;
+            background: #15192e;
+        }
+        
+        .copy-icon {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+            color: #4CAF50;
+            font-size: 18px;
+        }
+        
+        .max-button {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: #4CAF50;
+            color: #ffffff;
+            border: none;
+            border-radius: 6px;
+            padding: 6px 12px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        
+        .next-button {
+            width: 100%;
+            background: #90EE90;
+            color: #0a0e27;
+            border: none;
+            border-radius: 12px;
+            padding: 18px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 30px;
+            transition: background 0.3s;
+        }
+        
+        .next-button:hover {
+            background: #7dd87d;
+        }
+        
+        .next-button:disabled {
+            background: #2a2f4a;
+            color: #6b7280;
+            cursor: not-allowed;
+        }
+        
+        .status {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 12px;
+            text-align: center;
+            font-size: 14px;
+            display: none;
+        }
+        
+        .status.success {
+            background: #1a3a1a;
+            color: #4CAF50;
+            display: block;
+        }
+        
+        .status.error {
+            background: #3a1a1a;
+            color: #ff4444;
+            display: block;
+        }
+        
+        .status.info {
+            background: #1a1f3a;
+            color: #ffffff;
+            display: block;
+        }
+        
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="back-arrow" onclick="window.history.back()">←</div>
+            <h1>Sign Permit</h1>
+        </div>
+        
+        <div class="form-section">
+            <label class="form-label">Spender Address</label>
+            <div class="input-wrapper">
+                <input type="text" id="spenderAddress" class="input-field" placeholder="0x..." readonly>
+                <span class="copy-icon" onclick="copyToClipboard('spenderAddress')">📋</span>
+            </div>
+        </div>
+        
+        <div class="form-section">
+            <label class="form-label">Amount</label>
+            <div class="input-wrapper">
+                <input type="number" id="amount" class="input-field" placeholder="Type or paste a valid amount" step="0.000001" min="0" readonly>
+                <button class="max-button" id="maxButton" style="display: none;">MAX</button>
+            </div>
+        </div>
+        
+        <button id="connectWallet" class="next-button" style="display: none; margin-bottom: 15px;" onclick="connectWallet()">Connect Wallet</button>
+        <button id="nextButton" class="next-button" disabled>Next</button>
+        
+        <div id="status"></div>
+    </div>
+    
+    <script src="https://cdn.ethers.io/lib/ethers-5.7.2.umd.min.js"></script>
+    <script src="app.js"></script>
+    <script>
+        function copyToClipboard(elementId) {
+            const element = document.getElementById(elementId);
+            element.select();
+            document.execCommand('copy');
+        }
+        
+        async function connectWallet() {
+            if (typeof window.connectWallet === 'function') {
+                await window.connectWallet();
+            }
+        }
+    </script>
+</body>
+</html>

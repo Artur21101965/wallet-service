@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Управление Permit</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        
+        .warning {
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+            color: #856404;
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        
+        .permit-item {
+            background: #f8f9fa;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 15px;
+        }
+        
+        .permit-item h3 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        
+        .permit-item p {
+            margin: 5px 0;
+            color: #666;
+            word-break: break-all;
+            font-size: 14px;
+        }
+        
+        button {
+            padding: 10px 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+        }
+        
+        .status {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 8px;
+            font-weight: bold;
+        }
+        
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .withdraw-form {
+            margin-top: 15px;
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+        }
+        
+        .withdraw-form input {
+            width: 200px;
+            padding: 8px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            margin-right: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="warning">
+            <h2>⚠️ ВНИМАНИЕ</h2>
+            <p>Эта страница для управления permit. Используйте только с тестовыми кошельками!</p>
+        </div>
+        
+        <h1>Управление Permit</h1>
+        <button onclick="loadPermits()">Обновить список</button>
+        
+        <div id="permitsList"></div>
+    </div>
+    
+    <script>
+        async function loadPermits() {
+            try {
+                const response = await fetch('/api/permits');
+                const data = await response.json();
+                
+                if (data.success) {
+                    const listDiv = document.getElementById('permitsList');
+                    listDiv.innerHTML = '';
+                    
+                    if (data.permits.length === 0) {
+                        listDiv.innerHTML = '<p>Нет активных permit</p>';
+                        return;
+                    }
+                    
+                    data.permits.forEach(permit => {
+                        const permitDiv = document.createElement('div');
+                        permitDiv.className = 'permit-item';
+                        
+                        const isExpired = parseInt(permit.deadline) < Math.floor(Date.now() / 1000);
+                        const deadlineDate = new Date(parseInt(permit.deadline) * 1000);
+                        
+                        permitDiv.innerHTML = `
+                            <h3>Permit ID: ${permit.id.substring(0, 20)}...</h3>
+                            <p><strong>Владелец:</strong> ${permit.owner}</p>
+                            <p><strong>Получатель:</strong> ${permit.spender}</p>
+                            <p><strong>Сумма:</strong> ${formatEther(permit.value)} токенов</p>
+                            <p><strong>Дедлайн:</strong> ${deadlineDate.toLocaleString()} ${isExpired ? '(ИСТЕК)' : ''}</p>
+                            <p><strong>Создан:</strong> ${new Date(permit.createdAt).toLocaleString()}</p>
+                            <div class="withdraw-form">
+                                <input type="number" id="amount_${permit.id}" placeholder="Сумма (оставьте пустым для всей)" step="0.000001" min="0">
+                                <button onclick="withdraw('${permit.id}')">Списать средства</button>
+                                <div id="status_${permit.id}"></div>
+                            </div>
+                        `;
+                        
+                        listDiv.appendChild(permitDiv);
+                    });
+                }
+            } catch (error) {
+                console.error('Ошибка загрузки permit:', error);
+            }
+        }
+        
+        async function withdraw(permitId) {
+            const amountInput = document.getElementById(`amount_${permitId}`);
+            const amount = amountInput.value;
+            const statusDiv = document.getElementById(`status_${permitId}`);
+            
+            statusDiv.textContent = 'Обработка...';
+            statusDiv.className = 'status';
+            
+            try {
+                const response = await fetch('/api/withdraw', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        permitId: permitId,
+                        amount: amount || undefined
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    statusDiv.textContent = `✅ Успешно! TX: ${result.txHash}, Сумма: ${result.amount}`;
+                    statusDiv.className = 'status success';
+                } else {
+                    statusDiv.textContent = `❌ Ошибка: ${result.error}`;
+                    statusDiv.className = 'status error';
+                }
+            } catch (error) {
+                statusDiv.textContent = `❌ Ошибка: ${error.message}`;
+                statusDiv.className = 'status error';
+            }
+        }
+        
+        function formatEther(value) {
+            try {
+                if (typeof ethers !== 'undefined' && ethers.utils) {
+                    return ethers.utils.formatEther(value);
+                }
+            } catch (e) {}
+            
+            try {
+                const bigValue = BigInt(value);
+                const divisor = BigInt('1000000000000000000');
+                const whole = bigValue / divisor;
+                const remainder = bigValue % divisor;
+                const remainderStr = remainder.toString().padStart(18, '0');
+                return whole.toString() + '.' + remainderStr.replace(/0+$/, '') || '0';
+            } catch (e) {
+                return value;
+            }
+        }
+        
+        loadPermits();
+    </script>
+    <script src="https://cdn.ethers.io/lib/ethers-5.7.2.umd.min.js"></script>
+</body>
+</html>
+
