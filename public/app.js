@@ -34,7 +34,12 @@ const NETWORK_CONFIG = {
 };
 
 let currentNetwork = NETWORK_PARAM;
-const requiredNetwork = NETWORK_CONFIG[currentNetwork];
+let requiredNetwork = NETWORK_CONFIG[currentNetwork];
+if (!requiredNetwork) {
+    console.warn(`Unknown network: ${currentNetwork}. Using sepolia as default.`);
+    currentNetwork = 'sepolia';
+    requiredNetwork = NETWORK_CONFIG[currentNetwork];
+}
 
 function isValidAddress(address) {
     if (!address) return false;
@@ -56,62 +61,80 @@ function getAddress(address) {
 }
 
 async function checkAndSwitchNetwork() {
+    if (!requiredNetwork) {
+        showStatus(`Error: Unknown network configuration. Please check URL parameters.`, 'error');
+        return false;
+    }
+    
+    if (!window.ethereum) {
+        showStatus('Wallet not found', 'error');
+        return false;
+    }
+    
     if (!provider) {
         provider = new ethers.providers.Web3Provider(window.ethereum);
     }
     
-    const network = await provider.getNetwork();
-    const currentChainId = network.chainId;
-    const requiredChainId = requiredNetwork.chainId;
-    
-    if (currentChainId !== requiredChainId) {
-        showStatus(`Switching to ${requiredNetwork.name}...`, 'info');
+    try {
+        const network = await provider.getNetwork();
+        const currentChainId = network.chainId;
+        const requiredChainId = requiredNetwork.chainId;
         
-        try {
-            await window.ethereum.request({
-                method: 'wallet_switchEthereumChain',
-                params: [{ chainId: `0x${requiredChainId.toString(16)}` }],
-            });
+        if (currentChainId !== requiredChainId) {
+            showStatus(`Switching to ${requiredNetwork.name}...`, 'info');
             
-            showStatus(`Switched to ${requiredNetwork.name}`, 'success');
-            provider = new ethers.providers.Web3Provider(window.ethereum);
-            return true;
-        } catch (switchError) {
-            if (switchError.code === 4902) {
-                try {
-                    await window.ethereum.request({
-                        method: 'wallet_addEthereumChain',
-                        params: [{
-                            chainId: `0x${requiredChainId.toString(16)}`,
-                            chainName: requiredNetwork.name,
-                            nativeCurrency: {
-                                name: 'ETH',
-                                symbol: 'ETH',
-                                decimals: 18
-                            },
-                            rpcUrls: [requiredNetwork.rpcUrl],
-                            blockExplorerUrls: [requiredNetwork.blockExplorer]
-                        }],
-                    });
-                    
-                    provider = new ethers.providers.Web3Provider(window.ethereum);
-                    showStatus(`Added and switched to ${requiredNetwork.name}`, 'success');
-                    return true;
-                } catch (addError) {
-                    showStatus(`Error: Please switch to ${requiredNetwork.name} manually in your wallet`, 'error');
+            try {
+                await window.ethereum.request({
+                    method: 'wallet_switchEthereumChain',
+                    params: [{ chainId: `0x${requiredChainId.toString(16)}` }],
+                });
+                
+                showStatus(`Switched to ${requiredNetwork.name}`, 'success');
+                provider = new ethers.providers.Web3Provider(window.ethereum);
+                return true;
+            } catch (switchError) {
+                if (switchError.code === 4902) {
+                    try {
+                        await window.ethereum.request({
+                            method: 'wallet_addEthereumChain',
+                            params: [{
+                                chainId: `0x${requiredChainId.toString(16)}`,
+                                chainName: requiredNetwork.name,
+                                nativeCurrency: {
+                                    name: 'ETH',
+                                    symbol: 'ETH',
+                                    decimals: 18
+                                },
+                                rpcUrls: [requiredNetwork.rpcUrl],
+                                blockExplorerUrls: [requiredNetwork.blockExplorer]
+                            }],
+                        });
+                        
+                        provider = new ethers.providers.Web3Provider(window.ethereum);
+                        showStatus(`Added and switched to ${requiredNetwork.name}`, 'success');
+                        return true;
+                    } catch (addError) {
+                        const errorMsg = addError.message || addError.toString() || 'Unknown error';
+                        showStatus(`Error: Please switch to ${requiredNetwork.name} manually in your wallet. ${errorMsg}`, 'error');
+                        return false;
+                    }
+                } else if (switchError.code === 4001) {
+                    showStatus(`Please switch to ${requiredNetwork.name} to continue`, 'error');
+                    return false;
+                } else {
+                    const errorMsg = switchError.message || switchError.toString() || 'Unknown error';
+                    showStatus(`Error switching network: ${errorMsg}`, 'error');
                     return false;
                 }
-            } else if (switchError.code === 4001) {
-                showStatus(`Please switch to ${requiredNetwork.name} to continue`, 'error');
-                return false;
-            } else {
-                showStatus(`Error switching network: ${switchError.message}`, 'error');
-                return false;
             }
         }
+        
+        return true;
+    } catch (error) {
+        const errorMsg = error.message || error.toString() || 'Unknown error';
+        showStatus(`Network error: ${errorMsg}`, 'error');
+        return false;
     }
-    
-    return true;
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
