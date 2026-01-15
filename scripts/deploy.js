@@ -30,6 +30,12 @@ async function main() {
   } else if (network === 'mainnet') {
     console.log("\n⚠️  Сохраните этот адрес в .env файле:");
     console.log("   TOKEN_ADDRESS_MAINNET=" + token.address + "\n");
+  } else if (network === 'bsc') {
+    console.log("\n⚠️  Сохраните этот адрес в .env файле:");
+    console.log("   TOKEN_ADDRESS_BSC=" + token.address + "\n");
+  } else if (network === 'bscTestnet') {
+    console.log("\n⚠️  Сохраните этот адрес в .env файле:");
+    console.log("   TOKEN_ADDRESS_BSC_TESTNET=" + token.address + "\n");
   } else {
     console.log("\n⚠️  Сохраните этот адрес в .env файле\n");
   }
