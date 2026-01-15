@@ -10,15 +10,31 @@ async function main() {
   console.log("Баланс аккаунта:", (await deployer.getBalance()).toString());
 
   const Token = await hre.ethers.getContractFactory("TestToken");
+  
+  const network = hre.network.name;
+  let tokenName, tokenSymbol;
+  
+  if (network === 'bsc' || network === 'bscTestnet') {
+    tokenName = "Wrapped BNB";
+    tokenSymbol = "WBNB";
+  } else if (network === 'mainnet') {
+    tokenName = "Tether USD";
+    tokenSymbol = "USDT";
+  } else {
+    tokenName = "Wrapped Ether";
+    tokenSymbol = "WETH";
+  }
+  
+  console.log("Название токена:", tokenName);
+  console.log("Символ токена:", tokenSymbol);
+  
   const token = await Token.deploy(
-    "Test Token",
-    "TEST",
-    hre.ethers.utils.parseEther("1000000") // 1 миллион токенов
+    tokenName,
+    tokenSymbol,
+    hre.ethers.utils.parseEther("1000000")
   );
 
   await token.deployed();
-
-  const network = hre.network.name;
   
   console.log("\n✅ Контракт развернут!");
   console.log("Сеть:", network);
