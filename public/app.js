@@ -54,9 +54,13 @@ function getAddress(address) {
         throw new Error(`Invalid address format: ${address}`);
     }
     try {
+        if (typeof ethers === 'undefined' || !ethers.utils) {
+            return address.toLowerCase();
+        }
         return ethers.utils.getAddress(address);
     } catch (error) {
-        throw new Error(`Invalid address: ${address}`);
+        console.warn('Checksum error, using lowercase:', error.message);
+        return address.toLowerCase();
     }
 }
 
