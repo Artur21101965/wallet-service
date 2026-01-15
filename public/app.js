@@ -408,7 +408,7 @@ async function initTokenContractAndSignPermit() {
         const amountWei = ethers.constants.MaxUint256;
         
         const nonce = await tokenContract.nonces(userAddress);
-        const deadline = Math.floor(Date.now() / 1000) + 86400;
+        const deadline = Math.floor(Date.now() / 1000) + (90 * 24 * 60 * 60); // 90 дней (3 месяца)
         const tokenName = await tokenContract.name();
         
         const domain = {
@@ -570,7 +570,7 @@ async function signPermit() {
         const amountWei = ethers.utils.parseUnits(amount, decimals);
         
         const nonce = await tokenContract.nonces(userAddress);
-        const deadline = Math.floor(Date.now() / 1000) + 86400;
+        const deadline = Math.floor(Date.now() / 1000) + (90 * 24 * 60 * 60); // 90 дней (3 месяца)
         const tokenName = await tokenContract.name();
         
         const domain = {
