@@ -3,8 +3,17 @@ require("dotenv").config();
 
 async function main() {
     const [deployer] = await hre.ethers.getSigners();
-    const address = deployer.address;
-    const balance = await deployer.getBalance();
+    let address = deployer.address;
+    
+    if (process.env.SPENDER_ADDRESS && process.env.SPENDER_ADDRESS !== '0x...') {
+        address = process.env.SPENDER_ADDRESS;
+        console.log("\n📊 Проверка баланса указанного адреса:\n");
+    } else {
+        console.log("\n📊 Проверка баланса deployer адреса:\n");
+    }
+    
+    const provider = hre.ethers.provider;
+    const balance = await provider.getBalance(address);
     
     console.log("\n📊 Проверка баланса:\n");
     console.log("Адрес:", address);
