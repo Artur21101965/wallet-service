@@ -11,6 +11,8 @@
     "check": "node scripts/check-config.js",
     "deploy:sepolia": "npx hardhat run scripts/deploy.js --network sepolia",
     "deploy:mainnet": "npx hardhat run scripts/deploy.js --network mainnet",
+    "deploy:bsc": "npx hardhat run scripts/deploy.js --network bsc",
+    "deploy:bscTestnet": "npx hardhat run scripts/deploy.js --network bscTestnet",
     "deploy:cloud": "node scripts/deploy-cloud.js",
     "deploy": "node auto-deploy.js"
   },

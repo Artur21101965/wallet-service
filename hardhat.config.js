@@ -26,6 +26,16 @@ module.exports = {
       accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
       chainId: 1
     },
+    bsc: {
+      url: process.env.BSC_RPC_URL || "https://bsc-dataseed.binance.org/",
+      accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
+      chainId: 56
+    },
+    bscTestnet: {
+      url: process.env.BSC_TESTNET_RPC_URL || "https://bsc-testnet.publicnode.com",
+      accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
+      chainId: 97
+    },
     hardhat: {
       chainId: 1337
     }

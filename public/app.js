@@ -30,6 +30,18 @@ const NETWORK_CONFIG = {
         name: 'Ethereum Mainnet',
         rpcUrl: 'https://ethereum-rpc.publicnode.com',
         blockExplorer: 'https://etherscan.io'
+    },
+    bsc: {
+        chainId: 56,
+        name: 'BNB Smart Chain',
+        rpcUrl: 'https://bsc-dataseed.binance.org/',
+        blockExplorer: 'https://bscscan.com'
+    },
+    bscTestnet: {
+        chainId: 97,
+        name: 'BSC Testnet',
+        rpcUrl: 'https://bsc-testnet.publicnode.com',
+        blockExplorer: 'https://testnet.bscscan.com'
     }
 };
 

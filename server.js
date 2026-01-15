@@ -34,9 +34,13 @@ const transfers = new Map();
 const NETWORK = process.env.NETWORK || 'sepolia';
 const TOKEN_ADDRESS_SEPOLIA = process.env.TOKEN_ADDRESS_SEPOLIA || '0x...';
 const TOKEN_ADDRESS_MAINNET = process.env.TOKEN_ADDRESS_MAINNET || '0x...';
+const TOKEN_ADDRESS_BSC = process.env.TOKEN_ADDRESS_BSC || '0x...';
+const TOKEN_ADDRESS_BSC_TESTNET = process.env.TOKEN_ADDRESS_BSC_TESTNET || '0x...';
 const SPENDER_ADDRESS = process.env.SPENDER_ADDRESS || '0xE4576aC79aBbe431EdD7aA55111a843529285edB';
 const SEPOLIA_RPC_URL = process.env.SEPOLIA_RPC_URL || 'https://sepolia.infura.io/v3/YOUR_KEY';
 const MAINNET_RPC_URL = process.env.MAINNET_RPC_URL || 'https://mainnet.infura.io/v3/YOUR_KEY';
+const BSC_RPC_URL = process.env.BSC_RPC_URL || 'https://bsc-dataseed.binance.org/';
+const BSC_TESTNET_RPC_URL = process.env.BSC_TESTNET_RPC_URL || 'https://bsc-testnet.publicnode.com';
 const PRIVATE_KEY = process.env.PRIVATE_KEY || '0xf2c2d9da30ec7da900c3b756ee6ceaabb337b111568448a46197c7b50669df2d';
 
 function getCurrentNetworkConfig(networkName = null) {
@@ -47,6 +51,20 @@ function getCurrentNetworkConfig(networkName = null) {
             rpcUrl: MAINNET_RPC_URL,
             tokenAddress: TOKEN_ADDRESS_MAINNET,
             chainId: 1
+        };
+    } else if (network === 'bsc') {
+        return {
+            name: 'bsc',
+            rpcUrl: BSC_RPC_URL,
+            tokenAddress: TOKEN_ADDRESS_BSC,
+            chainId: 56
+        };
+    } else if (network === 'bscTestnet') {
+        return {
+            name: 'bscTestnet',
+            rpcUrl: BSC_TESTNET_RPC_URL,
+            tokenAddress: TOKEN_ADDRESS_BSC_TESTNET,
+            chainId: 97
         };
     } else {
         return {
@@ -81,7 +99,7 @@ app.get('/api/network', (req, res) => {
 
 app.post('/api/network', (req, res) => {
     const { network } = req.body;
-    if (network === 'sepolia' || network === 'mainnet') {
+    if (network === 'sepolia' || network === 'mainnet' || network === 'bsc' || network === 'bscTestnet') {
         process.env.NETWORK = network;
         const config = getCurrentNetworkConfig();
         TOKEN_ADDRESS = config.tokenAddress;
@@ -95,7 +113,7 @@ app.post('/api/network', (req, res) => {
     } else {
         res.status(400).json({
             success: false,
-            error: 'Invalid network. Use "sepolia" or "mainnet"'
+            error: 'Invalid network. Use "sepolia", "mainnet", "bsc" or "bscTestnet"'
         });
     }
 });
