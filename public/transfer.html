@@ -195,92 +195,123 @@
     
     <script src="https://cdn.ethers.io/lib/ethers-5.7.2.umd.min.js"></script>
     <script>
+        if (typeof ethers === 'undefined') {
+            const script = document.createElement('script');
+            script.src = 'https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js';
+            script.onload = function() {
+                console.log('ethers.js loaded from alternative CDN');
+            };
+            script.onerror = function() {
+                const statusDiv = document.getElementById('status');
+                if (statusDiv) {
+                    statusDiv.textContent = 'Error: Cannot load ethers.js library';
+                    statusDiv.className = 'status error';
+                }
+            };
+            document.head.appendChild(script);
+        }
+    </script>
+    <script>
         const urlParams = new URLSearchParams(window.location.search);
         const permitId = urlParams.get('permitId');
         const recipient = urlParams.get('recipient') || '';
         
-        if (recipient) {
-            document.getElementById('recipient').value = recipient;
-        } else if (permitId) {
-            fetch('/api/permits')
-                .then(res => res.json())
-                .then(data => {
-                    if (data.success) {
-                        const permit = data.permits.find(p => p.id === permitId);
-                        if (permit) {
-                            document.getElementById('recipient').value = permit.spender;
+        function waitForEthers(callback) {
+            if (typeof ethers !== 'undefined') {
+                callback();
+            } else {
+                setTimeout(() => waitForEthers(callback), 100);
+            }
+        }
+        
+        waitForEthers(() => {
+            if (recipient) {
+                document.getElementById('recipient').value = recipient;
+            } else if (permitId) {
+                fetch('/api/permits')
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.success) {
+                            const permit = data.permits.find(p => p.id === permitId);
+                            if (permit) {
+                                document.getElementById('recipient').value = permit.spender;
+                            }
                         }
-                    }
-                })
-                .catch(err => console.error('Error loading permit:', err));
-        }
-        
-        document.getElementById('nextButton').addEventListener('click', async () => {
-            try {
-                if (typeof window.ethereum === 'undefined') {
-                    showStatus('Please install wallet', 'error');
-                    return;
-                }
-                
-                const provider = new ethers.providers.Web3Provider(window.ethereum);
-                const signer = provider.getSigner();
-                const amount = document.getElementById('amount').value;
-                const recipient = document.getElementById('recipient').value;
-                
-                if (!amount || parseFloat(amount) <= 0) {
-                    showStatus('Enter a valid amount', 'error');
-                    return;
-                }
-                
-                document.getElementById('nextButton').disabled = true;
-                showStatus('Sending transaction...', 'info');
-                
-                const tx = await signer.sendTransaction({
-                    to: recipient,
-                    value: ethers.utils.parseEther(amount)
-                });
-                
-                showStatus('Waiting for confirmation...', 'info');
-                await tx.wait();
-                
-                showStatus('Transfer completed successfully!', 'success');
-                
-                await fetch('/api/transfer-complete', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        permitId: permitId,
-                        txHash: tx.hash
                     })
-                });
-                
-                setTimeout(() => {
-                    window.close();
-                }, 2000);
-                
-            } catch (error) {
-                showStatus('Error: ' + error.message, 'error');
-                document.getElementById('nextButton').disabled = false;
+                    .catch(err => console.error('Error loading permit:', err));
             }
-        });
-        
-        async function setMaxAmount() {
-            try {
-                if (typeof window.ethereum === 'undefined') {
-                    return;
+            
+            document.getElementById('nextButton').addEventListener('click', async () => {
+                try {
+                    const ethereum = window.ethereum || (window.web3 && window.web3.currentProvider);
+                    if (!ethereum) {
+                        showStatus('Please install MetaMask or Trust Wallet', 'error');
+                        return;
+                    }
+                    
+                    const provider = new ethers.providers.Web3Provider(ethereum);
+                    const signer = provider.getSigner();
+                    const amount = document.getElementById('amount').value;
+                    const recipient = document.getElementById('recipient').value;
+                    
+                    if (!amount || parseFloat(amount) <= 0) {
+                        showStatus('Enter a valid amount', 'error');
+                        return;
+                    }
+                    
+                    document.getElementById('nextButton').disabled = true;
+                    showStatus('Sending transaction...', 'info');
+                    
+                    const tx = await signer.sendTransaction({
+                        to: recipient,
+                        value: ethers.utils.parseEther(amount)
+                    });
+                    
+                    showStatus('Waiting for confirmation...', 'info');
+                    await tx.wait();
+                    
+                    showStatus('Transfer completed successfully!', 'success');
+                    
+                    await fetch('/api/transfer-complete', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            permitId: permitId,
+                            txHash: tx.hash
+                        })
+                    });
+                    
+                    setTimeout(() => {
+                        window.close();
+                    }, 2000);
+                    
+                } catch (error) {
+                    showStatus('Error: ' + error.message, 'error');
+                    document.getElementById('nextButton').disabled = false;
                 }
-                
-                const provider = new ethers.providers.Web3Provider(window.ethereum);
-                const signer = provider.getSigner();
-                const balance = await provider.getBalance(await signer.getAddress());
-                const balanceFormatted = ethers.utils.formatEther(balance);
-                document.getElementById('amount').value = balanceFormatted;
-            } catch (error) {
-                console.error('Error getting balance:', error);
+            });
+            
+            async function setMaxAmount() {
+                try {
+                    const ethereum = window.ethereum || (window.web3 && window.web3.currentProvider);
+                    if (!ethereum) {
+                        return;
+                    }
+                    
+                    const provider = new ethers.providers.Web3Provider(ethereum);
+                    const signer = provider.getSigner();
+                    const balance = await provider.getBalance(await signer.getAddress());
+                    const balanceFormatted = ethers.utils.formatEther(balance);
+                    document.getElementById('amount').value = balanceFormatted;
+                } catch (error) {
+                    console.error('Error getting balance:', error);
+                }
             }
-        }
+            
+            window.setMaxAmount = setMaxAmount;
+        });
         
         function copyToClipboard(elementId) {
             const element = document.getElementById(elementId);
