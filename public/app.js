@@ -117,8 +117,8 @@ async function checkAndSwitchNetwork() {
                                 chainId: `0x${requiredChainId.toString(16)}`,
                                 chainName: requiredNetwork.name,
                                 nativeCurrency: {
-                                    name: 'ETH',
-                                    symbol: 'ETH',
+                                    name: requiredNetwork.name.includes('BSC') || requiredNetwork.name.includes('BNB') ? 'BNB' : 'ETH',
+                                    symbol: requiredNetwork.name.includes('BSC') || requiredNetwork.name.includes('BNB') ? 'BNB' : 'ETH',
                                     decimals: 18
                                 },
                                 rpcUrls: [requiredNetwork.rpcUrl],
