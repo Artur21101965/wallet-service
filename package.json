@@ -9,6 +9,8 @@
     "setup": "node scripts/setup.js",
     "setup-rpc": "node scripts/setup-rpc.js",
     "check": "node scripts/check-config.js",
+    "check-balance:bsc": "npx hardhat run scripts/check-balance.js --network bsc",
+    "check-balance:bscTestnet": "npx hardhat run scripts/check-balance.js --network bscTestnet",
     "deploy:sepolia": "npx hardhat run scripts/deploy.js --network sepolia",
     "deploy:mainnet": "npx hardhat run scripts/deploy.js --network mainnet",
     "deploy:bsc": "npx hardhat run scripts/deploy.js --network bsc",
